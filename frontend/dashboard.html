@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard - Bug Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <span>Bug Tracker</span>
+        <div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="report-bug.html">Report Bug</a>
+            <a href="bugs.html">All Bugs</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 id="welcome"></h2>
+
+        <div class="stats-grid">
+            <div class="stat-box"><div class="value" id="stat-total">-</div><div class="label">Total Bugs</div></div>
+            <div class="stat-box"><div class="value" id="stat-critical">-</div><div class="label">Critical</div></div>
+            <div class="stat-box"><div class="value" id="stat-high">-</div><div class="label">High</div></div>
+            <div class="stat-box"><div class="value" id="stat-medium">-</div><div class="label">Medium</div></div>
+            <div class="stat-box"><div class="value" id="stat-low">-</div><div class="label">Low</div></div>
+            <div class="stat-box"><div class="value" id="stat-open">-</div><div class="label">Open</div></div>
+            <div class="stat-box"><div class="value" id="stat-closed">-</div><div class="label">Closed</div></div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>All Bugs - Bug Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <span>Bug Tracker</span>
+        <div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="report-bug.html">Report Bug</a>
+            <a href="bugs.html">All Bugs</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2>Bugs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Title</th><th>Severity</th><th>Priority</th>
+                        <th>Component</th><th>Status</th><th>Assigned To</th>
+                    </tr>
+                </thead>
+                <tbody id="bugs-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/bugs.js"></script>
+</body>
+</html>

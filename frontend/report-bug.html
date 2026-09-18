@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Report Bug - Bug Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <span>Bug Tracker</span>
+        <div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="report-bug.html">Report Bug</a>
+            <a href="bugs.html">All Bugs</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2>Report a Bug</h2>
+            <form id="report-bug-form">
+                <label for="title">Title</label>
+                <input type="text" id="title" required>
+
+                <label for="description">Description</label>
+                <textarea id="description" required></textarea>
+
+                <label for="component">Component</label>
+                <select id="component" required>
+                    <option value="Authentication">Authentication</option>
+                    <option value="Database">Database</option>
+                    <option value="Payment">Payment</option>
+                    <option value="UI">UI</option>
+                    <option value="API">API</option>
+                    <option value="Performance">Performance</option>
+                </select>
+
+                <button type="submit">Submit (ML will predict severity &amp; priority)</button>
+            </form>
+            <div class="card" id="result-box" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/report-bug.js"></script>
+</body>
+</html>
