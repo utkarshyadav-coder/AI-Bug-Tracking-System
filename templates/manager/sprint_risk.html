@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Sprint Risk Analysis{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/manager/sprint_risk.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="sprint-risk-container">
+    <!-- Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-chart-line"></i> Sprint Risk Analysis</h1>
+        <p>Real-time risk assessment for active sprints</p>
+    </div>
+
+    {% if sprint %}
+        <!-- Active Sprint Info -->
+        <div class="sprint-info-card">
+            <div class="sprint-header">
+                <h2><i class="fas fa-rocket"></i> {{ sprint.name }}</h2>
+                <span class="sprint-status {{ sprint.status.lower() }}">{{ sprint.status }}</span>
+            </div>
+            <div class="sprint-dates">
+                <span><i class="far fa-calendar-alt"></i> {{ sprint.start_date }} to {{ sprint.end_date }}</span>
+            </div>
+            <div class="sprint-goal">
+                <strong>Goal:</strong> {{ sprint.goal }}
+            </div>
+        </div>
+
+        <!-- Risk Card -->
+        <div class="risk-card {{ risk.risk_level.lower() }}">
+            <div class="risk-header">
+                <h2>Sprint Health</h2>
+                <span class="risk-badge {{ risk.risk_level.lower() }}">{{ risk.risk_level }} RISK</span>
+            </div>
+            
+            <div class="risk-score">
+                {{ risk.risk_score }}% Risk Score
+            </div>
+
+            <div class="recommendation {{ risk.risk_level.lower() }}">
+                <i class="fas fa-lightbulb"></i>
+                {{ risk.recommendation }}
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-bug"></i></div>
+                <div class="metric-value">{{ risk.metrics.total_bugs }}</div>
+                <div class="metric-label">Total Bugs</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="metric-value">{{ risk.metrics.critical }}</div>
+                <div class="metric-label">Critical</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-fire"></i></div>
+                <div class="metric-value">{{ risk.metrics.p0 }}</div>
+                <div class="metric-label">P0 Bugs</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-clock"></i></div>
+                <div class="metric-value">{{ risk.metrics.days_left }}</div>
+                <div class="metric-label">Days Left</div>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <h3><i class="fas fa-tasks"></i> Sprint Progress</h3>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ risk.metrics.progress }}%">
+                        {{ risk.metrics.progress }}%
+                    </div>
+                </div>
+                <div class="progress-stats">
+                    <span>{{ risk.metrics.progress }}% Complete</span>
+                    <span>{{ risk.metrics.total_bugs - risk.metrics.completed }} bugs remaining</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Factors -->
+        <div class="risk-factors">
+            <h3><i class="fas fa-chart-pie"></i> Risk Factors</h3>
+            <div class="factors-list">
+                <div class="factor-item {{ 'high' if risk.metrics.p0 > 3 else 'normal' }}">
+                    <span class="factor-name">P0/P1 Bugs</span>
+                    <span class="factor-value">{{ risk.metrics.p0 + risk.metrics.p1 }}</span>
+                    <span class="factor-impact">{{ 'High Impact' if risk.metrics.p0 > 3 else 'Normal' }}</span>
+                </div>
+                <div class="factor-item {{ 'high' if risk.metrics.critical > 5 else 'normal' }}">
+                    <span class="factor-name">Critical Severity</span>
+                    <span class="factor-value">{{ risk.metrics.critical }}</span>
+                    <span class="factor-impact">{{ 'High Impact' if risk.metrics.critical > 5 else 'Normal' }}</span>
+                </div>
+                <div class="factor-item {{ 'high' if risk.metrics.days_left < 3 and risk.metrics.total_bugs > 10 else 'normal' }}">
+                    <span class="factor-name">Time Pressure</span>
+                    <span class="factor-value">{{ risk.metrics.days_left }} days</span>
+                    <span class="factor-impact">{{ 'High Impact' if risk.metrics.days_left < 3 and risk.metrics.total_bugs > 10 else 'Normal' }}</span>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- No Active Sprint -->
+        <div class="no-sprint-card">
+            <i class="fas fa-calendar-times"></i>
+            <h3>No Active Sprint</h3>
+            <p>There is currently no active sprint to analyze.</p>
+            <a href="{{ url_for('manager_dashboard') }}" class="btn-primary">
+                <i class="fas fa-arrow-left"></i> Return to Dashboard
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/manager/sprint_risk.js') }}"></script>
+{% endblock %}

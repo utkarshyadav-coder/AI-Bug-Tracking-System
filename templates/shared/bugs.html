@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}All Bugs{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Bug Tracker</h2>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <select name="severity" class="form-select">
+                    <option value="">All Severities</option>
+                    <option value="Critical" {% if severity_filter == 'Critical' %}selected{% endif %}>Critical</option>
+                    <option value="High" {% if severity_filter == 'High' %}selected{% endif %}>High</option>
+                    <option value="Medium" {% if severity_filter == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Low" {% if severity_filter == 'Low' %}selected{% endif %}>Low</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="P0" {% if priority_filter == 'P0' %}selected{% endif %}>P0</option>
+                    <option value="P1" {% if priority_filter == 'P1' %}selected{% endif %}>P1</option>
+                    <option value="P2" {% if priority_filter == 'P2' %}selected{% endif %}>P2</option>
+                    <option value="P3" {% if priority_filter == 'P3' %}selected{% endif %}>P3</option>
+                    <option value="P4" {% if priority_filter == 'P4' %}selected{% endif %}>P4</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{{ url_for('bugs') }}" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Severity</th>
+                        <th>Priority</th>
+                        <th>Component</th>
+                        <th>Status</th>
+                        <th>Assigned To</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bug in bugs %}
+                    <tr>
+                        <td><a href="{{ url_for('bug_detail', bug_id=bug.bug_id) }}"><strong>{{ bug.bug_id }}</strong></a></td>
+                        <td>{{ bug.title }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if bug.severity == 'Critical' else 'warning' if bug.severity == 'High' else 'info' if bug.severity == 'Medium' else 'secondary' }}">
+                                {{ bug.severity }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if bug.priority == 'P0' else 'warning' if bug.priority == 'P1' else 'primary' if bug.priority == 'P2' else 'info' if bug.priority == 'P3' else 'secondary' }}">
+                                {{ bug.priority }}
+                            </span>
+                        </td>
+                        <td>{{ bug.component }}</td>
+                        <td>
+                            {% if bug.status == 'Closed' %}
+                                <span class="badge bg-success">Closed</span>
+                            {% else %}
+                                <span class="badge bg-warning">Open</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ bug.assigned_to }}</td>
+                        <td>{{ bug.created_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

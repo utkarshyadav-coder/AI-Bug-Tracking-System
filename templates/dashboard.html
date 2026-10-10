@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Dashboard</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Bugs</h5>
+                <h2>{{ total_bugs }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Critical</h5>
+                <h2>{{ critical_bugs }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Open</h5>
+                <h2>{{ open_bugs }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Resolved</h5>
+                <h2>{{ resolved_bugs }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Priority Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Recent Bugs</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for bug in recent_bugs %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ bug.bug_id }}</strong>
+                            <span class="badge bg-{{ 'danger' if bug.severity == 'Critical' else 'warning' if bug.severity == 'High' else 'info' }}">
+                                {{ bug.severity }}
+                            </span>
+                        </div>
+                        <div>{{ bug.title }}</div>
+                        <small class="text-muted">Priority: {{ bug.priority }} | Status: {{ bug.status }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ctx = document.getElementById('priorityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['P0', 'P1', 'P2', 'P3', 'P4'],
+            datasets: [{
+                label: 'Number of Bugs',
+                data: [
+                    {{ priority_counts.P0 }},
+                    {{ priority_counts.P1 }},
+                    {{ priority_counts.P2 }},
+                    {{ priority_counts.P3 }},
+                    {{ priority_counts.P4 }}
+                ],
+                backgroundColor: [
+                    '#dc3545',
+                    '#fd7e14',
+                    '#ffc107',
+                    '#0d6efd',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

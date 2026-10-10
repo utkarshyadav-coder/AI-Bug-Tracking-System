@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Tester Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tester/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tester-dashboard">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1><i class="fas fa-flask"></i> Tester Dashboard</h1>
+        <p>Welcome back, <strong>{{ user.name }}</strong>! Here are your reported bugs.</p>
+    </div>
+
+    <!-- Stats Cards (Without Accuracy) -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-icon">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.bugs_found or 0 }}</h3>
+                <p>Bugs Found</p>
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.verified or 0 }}</h3>
+                <p>Verified</p>
+            </div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.pending or 0 }}</h3>
+                <p>Pending</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content - Two Column Layout -->
+    <div class="dashboard-grid">
+        <!-- Left Column - Quick Report Form -->
+        <div class="grid-card report-section">
+            <div class="card-header">
+                <h3><i class="fas fa-plus-circle"></i> Quick Report Bug</h3>
+                <span class="badge ai-badge">AI Powered</span>
+            </div>
+            <div class="card-body">
+                <form id="quickReportForm" method="POST" action="{{ url_for('report_bug') }}">
+                    <div class="form-group">
+                        <label>Bug Title</label>
+                        <input type="text" name="title" class="form-control" 
+                               placeholder="e.g., Login button not working" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" rows="3" 
+                                  placeholder="Describe what happened..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Component</label>
+                        <select name="component" class="form-select" required>
+                            <option value="">Select</option>
+                            <option value="Authentication">Authentication</option>
+                            <option value="Payment">Payment</option>
+                            <option value="UI">UI</option>
+                            <option value="API">API</option>
+                            <option value="Database">Database</option>
+                            <option value="Reporting">Reporting</option>
+                            <option value="Notification">Notification</option>
+                            <option value="Dashboard">Dashboard</option>
+                        </select>
+                    </div>
+
+                    <!-- AI Prediction Preview -->
+                    <div class="ai-preview">
+                        <div class="preview-header">
+                            <i class="fas fa-robot"></i>
+                            <span>AI Prediction</span>
+                            <span class="status-badge" id="aiStatus">Ready</span>
+                        </div>
+                        <div class="preview-grid">
+                            <div class="preview-item severity">
+                                <span class="label">Severity</span>
+                                <span class="value" id="predictedSeverity">-</span>
+                            </div>
+                            <div class="preview-item priority">
+                                <span class="label">Priority</span>
+                                <span class="value" id="predictedPriority">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Report Bug
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column - My Bugs List -->
+        <div class="grid-card bugs-section">
+            <div class="card-header">
+                <h3><i class="fas fa-list"></i> My Reported Bugs</h3>
+                <a href="{{ url_for('bugs') }}?reporter={{ user.username }}" class="view-all">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="bugs-list">
+                    {% for bug in my_bugs %}
+                    <div class="bug-item" data-bug-id="{{ bug.bug_id }}">
+                        <div class="bug-header">
+                            <span class="bug-id">{{ bug.bug_id }}</span>
+                            <span class="bug-date">{{ bug.created_date }}</span>
+                        </div>
+                        <div class="bug-title">{{ bug.title }}</div>
+                        <div class="bug-meta">
+                            <span class="severity-badge {{ bug.severity.lower() }}">
+                                {{ bug.severity }}
+                            </span>
+                            <span class="priority-badge {{ bug.priority }}">
+                                {{ bug.priority }}
+                            </span>
+                            <span class="status-badge {{ bug.status.lower() }}">
+                                {{ bug.status }}
+                            </span>
+                        </div>
+                        {% if bug.status == 'Fixed' %}
+                        <div class="bug-actions">
+                            <button class="btn-verify pass" onclick="verifyBug('{{ bug.bug_id }}', 'pass')">
+                                <i class="fas fa-check"></i> Pass
+                            </button>
+                            <button class="btn-verify fail" onclick="verifyBug('{{ bug.bug_id }}', 'fail')">
+                                <i class="fas fa-times"></i> Fail
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No bugs reported yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tester/dashboard.js') }}"></script>
+{% endblock %}

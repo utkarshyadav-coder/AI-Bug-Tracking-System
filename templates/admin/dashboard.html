@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-dashboard">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1><i class="fas fa-crown"></i> Admin Dashboard</h1>
+        <p>Welcome back, <strong>{{ user.name }}</strong>! Manage users and roles.</p>
+    </div>
+
+    <!-- Stats Cards (Simple) -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.total_users or 0 }}</h3>
+                <p>Total Users</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.admins or 0 }}</h3>
+                <p>Admins</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.managers or 0 }}</h3>
+                <p>Managers</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.developers or 0 }}</h3>
+                <p>Developers</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-flask"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.testers or 0 }}</h3>
+                <p>Testers</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="user-management">
+        <div class="card-header">
+            <h3><i class="fas fa-user-cog"></i> User Management</h3>
+            <button class="btn-add" onclick="showAddUserModal()">
+                <i class="fas fa-plus"></i> Add New User
+            </button>
+        </div>
+        
+        <div class="card-body">
+            <div class="users-table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="role-badge {{ user.role }}">
+                                    {{ user.role }}
+                                </span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                            <td class="actions">
+                                <button class="btn-icon edit" onclick="editUser('{{ user.username }}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon delete" onclick="deleteUser('{{ user.username }}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Data Reports Section - Add after User Management -->
+<div class="reports-section">
+    <div class="card-header">
+        <h3><i class="fas fa-file-alt"></i> Data Reports</h3>
+    </div>
+    <div class="reports-grid">
+        <!-- Users Report -->
+        <div class="report-card" onclick="downloadReport('users')">
+            <div class="report-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="report-info">
+                <h4>Users Report</h4>
+                <p>Complete user list with roles and join dates</p>
+                <span class="report-stats">{{ stats.total_users }} users</span>
+            </div>
+            <button class="download-btn">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+        
+        <!-- Bugs Report -->
+        <div class="report-card" onclick="downloadReport('bugs')">
+            <div class="report-icon">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="report-info">
+                <h4>Bugs Report</h4>
+                <p>All bugs with severity, priority, and status</p>
+                <span class="report-stats">{{ stats.total_bugs }} total, {{ stats.open_bugs }} open</span>
+            </div>
+            <button class="download-btn">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+        
+        <!-- Performance Report -->
+        <div class="report-card" onclick="downloadReport('performance')">
+            <div class="report-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="report-info">
+                <h4>Developer Performance</h4>
+                <p>Resolution times, completion rates, reopen stats</p>
+                <span class="report-stats">{{ stats.developers }} developers</span>
+            </div>
+            <button class="download-btn">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New User</h3>
+            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addUserForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullname" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="role" required>
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="developer">Developer</option>
+                        <option value="tester">Tester</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn-submit">Create User</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin/dashboard.js') }}"></script>
+
+{% endblock %  }

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BugTracker Pro{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Base Styles -->
+    <style>
+        :root {
+            --primary: #4361ee;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --success: #43aa8b;
+            --info: #4cc9f0;
+            --dark: #1e1e2f;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .navbar-brand i {
+            color: var(--info);
+            margin-right: 8px;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .nav-link.active {
+            background: var(--primary);
+            color: white !important;
+        }
+        
+        .nav-link i {
+            margin-right: 6px;
+        }
+        
+        /* User Menu */
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            text-align: right;
+            color: white;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .user-role {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+        
+        .role-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: white;
+            text-transform: uppercase;
+        }
+        
+        .role-badge.admin { background: var(--danger); }
+        .role-badge.manager { background: var(--warning); }
+        .role-badge.tester { background: var(--info); }
+        .role-badge.developer { background: var(--success); }
+        
+        .logout-btn {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            min-height: calc(100vh - 140px);
+        }
+        
+        /* Loading Spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 280px;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.warning { border-left: 4px solid var(--warning); }
+        .toast.info { border-left: 4px solid var(--info); }
+        
+        .toast i {
+            font-size: 1.2rem;
+        }
+        
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--danger); }
+        .toast.warning i { color: var(--warning); }
+        .toast.info i { color: var(--info); }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-close {
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 1rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.5rem 1rem;
+            }
+            
+            .user-menu {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                margin-top: 8px;
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="spinner-overlay" id="globalSpinner">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    {% if user %}
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="
+                {% if user.role == 'tester' %}{{ url_for('tester_dashboard') }}
+                {% elif user.role == 'developer' %}{{ url_for('developer_dashboard') }}
+                {% elif user.role == 'manager' %}{{ url_for('manager_dashboard') }}
+                {% elif user.role == 'admin' %}{{ url_for('admin_dashboard') }}
+                {% else %}{{ url_for('login') }}
+                {% endif %}">
+                <i class="fas fa-bug"></i> BugTracker Pro
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- Common Dashboard Link for all roles -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == user.role + '_dashboard' %}active{% endif %}" 
+                           href="
+                            {% if user.role == 'tester' %}{{ url_for('tester_dashboard') }}
+                            {% elif user.role == 'developer' %}{{ url_for('developer_dashboard') }}
+                            {% elif user.role == 'manager' %}{{ url_for('manager_dashboard') }}
+                            {% elif user.role == 'admin' %}{{ url_for('admin_dashboard') }}
+                            {% endif %}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    
+                    <!-- TESTER ONLY: Report Bug and All Bugs -->
+                    {% if user.role == 'tester' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'report_bug' %}active{% endif %}" 
+                           href="{{ url_for('report_bug') }}">
+                            <i class="fas fa-plus-circle"></i> Report Bug
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'bugs' %}active{% endif %}" 
+                           href="{{ url_for('bugs') }}">
+                            <i class="fas fa-list"></i> My Bugs
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- DEVELOPER ONLY: Assigned Bugs -->
+                    {% if user.role == 'developer' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'developer_dashboard' %}active{% endif %}" 
+                           href="{{ url_for('developer_dashboard') }}#assigned">
+                            <i class="fas fa-tasks"></i> Assigned
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'developer_dashboard' %}active{% endif %}" 
+                           href="{{ url_for('developer_dashboard') }}#completed">
+                            <i class="fas fa-check-circle"></i> Completed
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- MANAGER ONLY: Reports and Analytics -->
+                    {% if user.role == 'manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'manager_dashboard' %}active{% endif %}" 
+                           href="{{ url_for('manager_dashboard') }}#team">
+                            <i class="fas fa-users"></i> Team
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'sprint_risk_view' %}active{% endif %}" 
+                           href="{{ url_for('sprint_risk_view') }}">
+                            <i class="fas fa-chart-line"></i> Sprint Risk
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- ADMIN ONLY: User Management -->
+                    {% if user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" 
+                           href="{{ url_for('admin_dashboard') }}#users">
+                            <i class="fas fa-users-cog"></i> Users
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name">{{ user.name }}</div>
+                        <div class="user-role">
+                            <span class="role-badge {{ user.role }}">
+                                {{ user.role }}
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">
+                <i class="fas fa-bug me-2"></i>
+                AI-Driven Intelligent Bug Tracking System | © 2026
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Show/hide spinner
+        function showSpinner() {
+            document.getElementById('globalSpinner').style.display = 'flex';
+        }
+        
+        function hideSpinner() {
+            document.getElementById('globalSpinner').style.display = 'none';
+        }
+        
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'fa-check-circle';
+            if (type === 'error') icon = 'fa-exclamation-circle';
+            if (type === 'warning') icon = 'fa-exclamation-triangle';
+            if (type === 'info') icon = 'fa-info-circle';
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <div class="toast-content">${message}</div>
+                <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 5000);
+        }
+        
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
