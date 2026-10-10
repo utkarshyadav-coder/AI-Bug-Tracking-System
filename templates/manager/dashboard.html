@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/manager/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="manager-dashboard">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1><i class="fas fa-chart-line"></i> Manager Dashboard</h1>
+        <p>Welcome back, <strong>{{ user.name }}</strong>! Here's your project overview.</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="stat-icon">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.total_bugs or 0 }}</h3>
+                <p>Total Bugs</p>
+            </div>
+        </div>
+        
+        <div class="stat-card critical">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.critical_bugs or 0 }}</h3>
+                <p>Critical</p>
+            </div>
+        </div>
+        
+        <div class="stat-card open">
+            <div class="stat-icon">
+                <i class="fas fa-folder-open"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.open_bugs or 0 }}</h3>
+                <p>Open Bugs</p>
+            </div>
+        </div>
+        
+        <div class="stat-card time">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.avg_resolution or 0 }}d</h3>
+                <p>Avg Fix Time</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sprint Risk Widget -->
+    {% if sprint %}
+    <div class="risk-widget {{ sprint.risk_level.lower().replace(' ', '-') }}">
+        <div class="risk-header">
+            <div>
+                <h3><i class="fas fa-rocket"></i> Sprint {{ sprint.name }}</h3>
+                <span class="sprint-dates">{{ sprint.start_date }} to {{ sprint.end_date }}</span>
+            </div>
+            <span class="risk-badge">{{ sprint.risk_level }}</span>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ sprint.progress }}%">{{ sprint.progress }}%</div>
+            </div>
+        </div>
+        
+        <div class="risk-details">
+            <div class="risk-metric">
+                <i class="fas fa-exclamation-circle"></i>
+                <span><strong>{{ sprint.blockers }}</strong> P0/P1 blockers</span>
+            </div>
+            <div class="risk-metric">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Velocity: <strong>{{ sprint.velocity }}/day</strong> (target: {{ sprint.target_velocity }})</span>
+            </div>
+            <div class="risk-metric">
+                <i class="fas fa-calendar-check"></i>
+                <span>Completion: <strong>{{ sprint.completion }}%</strong></span>
+            </div>
+            <div class="risk-recommendation">
+                <i class="fas fa-lightbulb"></i>
+                <span>{{ sprint.recommendation }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Two Column Layout -->
+    <div class="dashboard-grid">
+        <!-- Left Column - Team Performance -->
+        <div class="grid-card team-section">
+            <div class="card-header">
+                <h3><i class="fas fa-users"></i> Team Performance</h3>
+                <span class="badge">{{ team|length }} Developers</span>
+            </div>
+            <div class="card-body">
+                <table class="team-table">
+                    <thead>
+                        <tr>
+                            <th>Developer</th>
+                            <th>Assigned</th>
+                            <th>Completed</th>
+                            <th>Avg Time</th>
+                            <th>Reopen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dev in team %}
+                        <tr>
+                            <td class="dev-name">{{ dev.name }}</td>
+                            <td>{{ dev.assigned }}</td>
+                            <td>{{ dev.completed }}</td>
+                            <td class="{% if dev.avg_time > 5 %}warning{% endif %}">{{ dev.avg_time }}d</td>
+                            <td class="{% if dev.reopen_rate > 10 %}warning{% endif %}">{{ dev.reopen_rate }}%</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-state">No team data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Column - Priority Distribution -->
+        <div class="grid-card priority-section">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-pie"></i> Priority Distribution</h3>
+            </div>
+            <div class="card-body">
+                <div class="priority-list">
+                    <div class="priority-item">
+                        <span class="priority-label p0">P0</span>
+                        <div class="priority-bar">
+                            <div class="bar-fill p0" style="width: {{ priority_stats.p0_percent }}%"></div>
+                        </div>
+                        <span class="priority-count">{{ priority_stats.p0_count }}</span>
+                    </div>
+                    <div class="priority-item">
+                        <span class="priority-label p1">P1</span>
+                        <div class="priority-bar">
+                            <div class="bar-fill p1" style="width: {{ priority_stats.p1_percent }}%"></div>
+                        </div>
+                        <span class="priority-count">{{ priority_stats.p1_count }}</span>
+                    </div>
+                    <div class="priority-item">
+                        <span class="priority-label p2">P2</span>
+                        <div class="priority-bar">
+                            <div class="bar-fill p2" style="width: {{ priority_stats.p2_percent }}%"></div>
+                        </div>
+                        <span class="priority-count">{{ priority_stats.p2_count }}</span>
+                    </div>
+                    <div class="priority-item">
+                        <span class="priority-label p3">P3</span>
+                        <div class="priority-bar">
+                            <div class="bar-fill p3" style="width: {{ priority_stats.p3_percent }}%"></div>
+                        </div>
+                        <span class="priority-count">{{ priority_stats.p3_count }}</span>
+                    </div>
+                    <div class="priority-item">
+                        <span class="priority-label p4">P4</span>
+                        <div class="priority-bar">
+                            <div class="bar-fill p4" style="width: {{ priority_stats.p4_percent }}%"></div>
+                        </div>
+                        <span class="priority-count">{{ priority_stats.p4_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bug Trends Chart -->
+    <div class="grid-card trends-section">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Bug Trends (Last 30 Days)</h3>
+            <div class="trend-filters">
+                <button class="filter-btn active" onclick="filterTrends('week')">Week</button>
+                <button class="filter-btn" onclick="filterTrends('month')">Month</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="trendsChart" width="800" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Critical Bugs List -->
+    <div class="grid-card critical-section">
+        <div class="card-header">
+            <h3><i class="fas fa-fire"></i> Critical & High Priority Bugs</h3>
+            <span class="badge">{{ critical_bugs|length }} needing attention</span>
+        </div>
+        <div class="card-body">
+            <div class="critical-list">
+                {% for bug in critical_bugs %}
+                <div class="critical-item priority-{{ bug.priority }}">
+                    <div class="bug-info">
+                        <span class="bug-id">{{ bug.bug_id }}</span>
+                        <span class="bug-title">{{ bug.title }}</span>
+                    </div>
+                    <div class="bug-meta">
+                        <span class="priority-badge {{ bug.priority }}">{{ bug.priority }}</span>
+                        <span class="severity-badge {{ bug.severity.lower() }}">{{ bug.severity }}</span>
+                        <span class="assignee">
+                            <i class="fas fa-user"></i> {{ bug.assigned_to or 'Unassigned' }}
+                        </span>
+                    </div>
+                    <div class="bug-actions">
+                        <button class="btn-icon" onclick="reassignBug('{{ bug.bug_id }}')" title="Reassign">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                        <button class="btn-icon" onclick="viewDetails('{{ bug.bug_id }}')" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <p>No critical bugs at this time</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn" onclick="generateReport()">
+            <i class="fas fa-file-pdf"></i> Generate Report
+        </button>
+        <button class="action-btn" onclick="reprioritize()">
+            <i class="fas fa-sort-amount-up"></i> Reprioritize
+        </button>
+        <button class="action-btn" onclick="startSprint()">
+            <i class="fas fa-play"></i> Start Sprint
+        </button>
+        <button class="action-btn" onclick="scheduleMeeting()">
+            <i class="fas fa-calendar"></i> Schedule Meeting
+        </button>
+    </div>
+    <!-- Sprint Management Section -->
+    <div class="grid-card sprint-management">
+        <div class="card-header">
+            <h3><i class="fas fa-rocket"></i> Sprint Management</h3>
+            <button class="btn-add" onclick="showCreateSprintModal()">
+                <i class="fas fa-plus"></i> New Sprint
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="sprint-list">
+                {% for sprint in active_sprints %}
+                <div class="sprint-card">
+                    <div class="sprint-header">
+                        <h4>{{ sprint.name }}</h4>
+                        <span class="status-badge {{ sprint.status.lower() }}">{{ sprint.status }}</span>
+                    </div>
+                    <div class="sprint-dates">{{ sprint.start_date }} to {{ sprint.end_date }}</div>
+                    <p class="sprint-goal">{{ sprint.goal }}</p>
+                    <div class="sprint-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ sprint.progress }}%"></div>
+                        </div>
+                        <span class="progress-text">{{ sprint.progress }}% complete</span>
+                    </div>
+                    <div class="sprint-actions">
+                        <button onclick="viewSprint('{{ sprint.sprint_id }}')">View</button>
+                        <button onclick="addBugsToSprint('{{ sprint.sprint_id }}')">Add Bugs</button>
+                        {% if sprint.status == 'Planning' %}
+                        <button onclick="startSprint('{{ sprint.sprint_id }}')">Start</button>
+                        {% elif sprint.status == 'Active' %}
+                        <button onclick="completeSprint('{{ sprint.sprint_id }}')">Complete</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Sprint Modal -->
+    <div id="createSprintModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Sprint</h3>
+                <span class="close" onclick="closeModal('createSprintModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createSprintForm">
+                    <div class="form-group">
+                        <label>Sprint Name</label>
+                        <input type="text" id="sprintName" placeholder="e.g., Sprint-24" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Sprint Goal</label>
+                        <textarea id="sprintGoal" rows="3" placeholder="What should be achieved?" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="date" id="startDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="endDate" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">Create Sprint</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/manager/dashboard.js') }}"></script>
+<script>
+    // Pass data to JavaScript
+    const trendData = {{ trend_data | tojson }};
+</script>
+{% endblock %}

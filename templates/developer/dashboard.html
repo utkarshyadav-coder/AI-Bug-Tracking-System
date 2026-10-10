@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Developer Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/developer/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="developer-dashboard">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1><i class="fas fa-code"></i> Developer Dashboard</h1>
+        <p>Welcome back, <strong>{{ user.name }}</strong>! Here are your assigned bugs and performance metrics.</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.total_assigned or 0 }}</h3>
+                <p>Total Assigned</p>
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.completed or 0 }}</h3>
+                <p>Completed</p>
+            </div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.in_progress or 0 }}</h3>
+                <p>In Progress</p>
+            </div>
+        </div>
+        
+        <div class="stat-card info">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.1f"|format(stats.avg_resolution or 0) }}</h3>
+                <p>Avg Fix Time (days)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column - Assigned Bugs -->
+        <div class="grid-card assigned-bugs">
+            <div class="card-header">
+                <h3><i class="fas fa-list"></i> My Assigned Bugs</h3>
+                <span class="badge">{{ assigned_bugs|length }} Active</span>
+            </div>
+            <div class="card-body">
+                <div class="bugs-list" id="assignedBugsList">
+                    {% for bug in assigned_bugs %}
+                    <div class="bug-item priority-{{ bug.priority }}" data-bug-id="{{ bug.bug_id }}">
+                        <div class="bug-header">
+                            <span class="bug-id">{{ bug.bug_id }}</span>
+                            <span class="bug-date">{{ bug.created_date }}</span>
+                        </div>
+                        <div class="bug-title">{{ bug.title }}</div>
+                        <div class="bug-meta">
+                            <span class="severity-badge {{ bug.severity.lower() }}">
+                                {{ bug.severity }}
+                            </span>
+                            <span class="priority-badge {{ bug.priority }}">
+                                {{ bug.priority }}
+                            </span>
+                            <span class="component-badge">
+                                <i class="fas fa-puzzle-piece"></i> {{ bug.component }}
+                            </span>
+                        </div>
+                        <div class="bug-actions">
+                            <button class="btn-action start" onclick="updateBugStatus('{{ bug.bug_id }}', 'start')">
+                                <i class="fas fa-play"></i> Start
+                            </button>
+                            <button class="btn-action fix" onclick="updateBugStatus('{{ bug.bug_id }}', 'fix')">
+                                <i class="fas fa-check"></i> Mark Fixed
+                            </button>
+                            <button class="btn-action need-help" onclick="updateBugStatus('{{ bug.bug_id }}', 'help')">
+                                <i class="fas fa-question-circle"></i> Need Help
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No bugs assigned yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <!-- Add this after assigned bugs section or as a new tab -->
+        <div class="grid-card completed-bugs">
+            <div class="card-header">
+                <h3><i class="fas fa-check-circle"></i> Recently Completed</h3>
+                <span class="badge">{{ completed_bugs|length }}</span>
+            </div>
+            <div class="card-body">
+                <div class="completed-list">
+                    {% for bug in completed_bugs %}
+                    <div class="completed-item">
+                        <div class="bug-id">{{ bug.bug_id }}</div>
+                        <div class="bug-title">{{ bug.title }}</div>
+                        <div class="bug-meta">
+                            <span class="severity-badge {{ bug.severity.lower() }}">{{ bug.severity }}</span>
+                            <span class="priority-badge {{ bug.priority }}">{{ bug.priority }}</span>
+                            <span class="completion-date">{{ bug.closed_date }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No completed bugs yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <!-- Right Column - Performance & Suggestions -->
+        <div class="right-column">
+            <!-- Performance Chart -->
+            <div class="grid-card performance">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Performance Trends</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Suggested Bugs (Based on Expertise) -->
+            <div class="grid-card suggestions">
+                <div class="card-header">
+                    <h3><i class="fas fa-lightbulb"></i> Suggested for You</h3>
+                    <span class="badge">AI Matched</span>
+                </div>
+                <div class="card-body">
+                    <div class="suggestions-list" id="suggestionsList">
+                        {% for bug in suggested_bugs %}
+                        <div class="suggestion-item">
+                            <div class="suggestion-title">{{ bug.title }}</div>
+                            <div class="suggestion-meta">
+                                <span class="component">{{ bug.component }}</span>
+                                <span class="match-score">{{ bug.match_score }}% match</span>
+                            </div>
+                            <button class="btn-claim" onclick="claimBug('{{ bug.bug_id }}')">
+                                <i class="fas fa-hand-paper"></i> Claim
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-smile"></i>
+                            <p>No suggestions right now</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="grid-card activity">
+                <div class="card-header">
+                    <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list">
+                        {% for activity in recent_activity %}
+                        <div class="activity-item">
+                            <i class="fas fa-circle {{ activity.type }}"></i>
+                            <div class="activity-content">
+                                <div class="activity-text">{{ activity.text }}</div>
+                                <div class="activity-time">{{ activity.time }}</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>No recent activity</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/developer/dashboard.js') }}"></script>
+{% endblock %}

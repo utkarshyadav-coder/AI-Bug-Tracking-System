@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bug.bug_id }} - AI Resolution{% endblock %}
+
+{% block content %}
+<div class="mb-3"><a href="{{ url_for('bugs') }}">&larr; All bugs</a></div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between flex-wrap">
+      <h3>{{ bug.bug_id }}: {{ bug.title }}</h3>
+      <div>
+        <span class="badge bg-{{ 'danger' if bug.severity == 'Critical' else 'warning' if bug.severity == 'High' else 'info' if bug.severity == 'Medium' else 'secondary' }}">{{ bug.severity }}</span>
+        <span class="badge bg-primary">{{ bug.priority }}</span>
+        <span class="badge bg-dark">{{ bug.status }}</span>
+      </div>
+    </div>
+    <p class="text-muted mb-1">{{ bug.component }} &middot; reported by {{ bug.reported_by or bug.reporter or 'n/a' }} &middot; assigned to <strong>{{ bug.assigned_to or 'unassigned' }}</strong></p>
+    <p>{{ bug.description }}</p>
+    {% if bug.resolution_notes %}
+    <div class="alert alert-success mb-0"><strong>Resolution:</strong> {{ bug.resolution_notes }}</div>
+    {% endif %}
+    {% if bug.duplicate_of %}
+    <div class="alert alert-secondary mb-0">Duplicate of <a href="{{ url_for('bug_detail', bug_id=bug.duplicate_of) }}">{{ bug.duplicate_of }}</a></div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="msg"></div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+
+    {% if advice.duplicates and not bug.duplicate_of %}
+    <div class="card mb-4 border-warning">
+      <div class="card-header bg-warning"><i class="fas fa-clone"></i> Possible duplicates</div>
+      <ul class="list-group list-group-flush">
+        {% for d in advice.duplicates %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><a href="{{ url_for('bug_detail', bug_id=d.bug_id) }}">{{ d.bug_id }}</a> {{ d.title }}
+            <small class="text-muted">({{ (d.similarity * 100)|round|int }}% match, {{ d.status }})</small></span>
+          {% if user.role in ['manager', 'admin', 'developer'] and bug.status != 'Closed' %}
+          <button class="btn btn-sm btn-outline-warning" onclick="markDuplicate('{{ d.bug_id }}')">Mark as duplicate of this</button>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-wrench"></i> Suggested fixes from history
+        {% if advice.confidence %}<span class="float-end text-muted">confidence {{ (advice.confidence * 100)|round|int }}%</span>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if advice.suggested_fixes %}
+          <ol class="mb-0">
+          {% for f in advice.suggested_fixes %}
+            <li class="mb-2">{{ f.fix }}
+              <br><small class="text-muted">Worked on {{ f.evidence|join(', ') }}</small></li>
+          {% endfor %}
+          </ol>
+        {% else %}
+          <p class="text-muted mb-0">No recorded fixes for similar bugs yet. When developers close bugs with resolution notes, suggestions appear here automatically.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-link"></i> Similar bugs</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>ID</th><th>Title</th><th>Match</th><th>Status</th><th>Fixed by</th></tr></thead>
+          <tbody>
+          {% for s in advice.similar_bugs %}
+            <tr>
+              <td><a href="{{ url_for('bug_detail', bug_id=s.bug_id) }}">{{ s.bug_id }}</a></td>
+              <td>{{ s.title }}</td>
+              <td>{{ (s.similarity * 100)|round|int }}%</td>
+              <td>{{ s.status }}</td>
+              <td>{{ s.assigned_to or '-' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="text-muted">No similar bugs found.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-robot"></i> AI fix plan (LLM)</div>
+      <div class="card-body">
+        {% if llm_available %}
+          <button class="btn btn-primary btn-sm" id="planBtn" onclick="generatePlan()">Generate root-cause hypotheses &amp; fix plan</button>
+          <div id="plan" class="mt-3"></div>
+        {% else %}
+          <p class="text-muted mb-0">Optional feature. Set <code>ANTHROPIC_API_KEY</code> and <code>pip install anthropic</code> to let Claude draft root-cause hypotheses and a test plan grounded in the similar bugs above.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-user-check"></i> Recommended developers</div>
+      <ul class="list-group list-group-flush">
+        {% for d in advice.recommended_developers %}
+        <li class="list-group-item">
+          <strong>{{ d.developer }}</strong> <span class="badge bg-primary float-end">{{ d.score }}</span>
+          <br><small class="text-muted">{{ d.reasons|join(' · ') }}</small>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No developer data yet.</li>
+        {% endfor %}
+      </ul>
+      {% if user.role in ['manager', 'admin'] and not bug.assigned_to %}
+      <div class="card-body"><button class="btn btn-success w-100" onclick="autoAssign()">Auto-assign to top match</button></div>
+      {% endif %}
+    </div>
+
+    {% if advice.eta %}
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-clock"></i> Estimated time to fix</div>
+      <div class="card-body">
+        <h2 class="mb-0">~{{ advice.eta.expected_days }} days</h2>
+        <small class="text-muted">range {{ advice.eta.range_days[0] }}&ndash;{{ advice.eta.range_days[1] }} days, from {{ advice.eta.based_on }} similar resolved bugs</small>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if bug.status not in ['Closed', 'Verified', 'Fixed'] and (user.role in ['manager', 'admin'] or bug.assigned_to == user.username) and user.role != 'tester' %}
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-check-circle"></i> Resolve this bug</div>
+      <div class="card-body">
+        <textarea id="notes" class="form-control mb-2" rows="4" placeholder="What was the root cause and what fixed it? This teaches the AI for future bugs."></textarea>
+        <button class="btn btn-success w-100" onclick="resolveBug()">Mark as Fixed</button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BUG_ID = {{ bug.bug_id|tojson }};
+
+function show(msg, ok) {
+  document.getElementById('msg').innerHTML =
+    `<div class="alert alert-${ok ? 'success' : 'danger'}">${msg.replace(/</g,'&lt;')}</div>`;
+}
+function post(url, body) {
+  return fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify(body || {})}).then(r => r.json());
+}
+function autoAssign() {
+  post(`/api/bug/${BUG_ID}/auto-assign`).then(d => {
+    if (d.success) { show('Assigned to ' + d.assigned_to, true); setTimeout(() => location.reload(), 800); }
+    else show(d.error, false);
+  });
+}
+function resolveBug() {
+  post(`/api/bug/${BUG_ID}/resolve`, {resolution_notes: document.getElementById('notes').value}).then(d => {
+    if (d.success) { show('Bug marked as fixed. The AI will use your notes for similar bugs.', true); setTimeout(() => location.reload(), 900); }
+    else show(d.error, false);
+  });
+}
+function markDuplicate(orig) {
+  if (!confirm(`Close ${BUG_ID} as a duplicate of ${orig}?`)) return;
+  post(`/api/bug/${BUG_ID}/mark-duplicate`, {duplicate_of: orig}).then(d => {
+    if (d.success) location.reload(); else show(d.error, false);
+  });
+}
+function list(items) {
+  return '<ul>' + (items || []).map(i => '<li>' + String(i).replace(/</g, '&lt;') + '</li>').join('') + '</ul>';
+}
+function generatePlan() {
+  const btn = document.getElementById('planBtn'); btn.disabled = true; btn.innerText = 'Thinking...';
+  post(`/api/bug/${BUG_ID}/fix-plan`).then(d => {
+    btn.disabled = false; btn.innerText = 'Regenerate';
+    if (!d.success) { show(d.error, false); return; }
+    const p = d.plan;
+    document.getElementById('plan').innerHTML =
+      '<h6>Root-cause hypotheses</h6>' + list(p.root_cause_hypotheses) +
+      '<h6>Fix steps</h6>' + list(p.fix_steps) +
+      '<h6>Test plan</h6>' + list(p.test_plan) +
+      '<p class="mb-0"><strong>Risk:</strong> ' + String(p.risk || 'n/a').replace(/</g, '&lt;') + '</p>';
+  });
+}
+</script>
+{% endblock %}

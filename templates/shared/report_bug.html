@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}Report Bug{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .report-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .report-header {
+        background: linear-gradient(135deg, #4361ee, #3f37c9);
+        color: white;
+        padding: 1.5rem 2rem;
+    }
+    
+    .report-header h2 {
+        margin: 0;
+        font-size: 1.8rem;
+    }
+    
+    .report-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .report-body {
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #495057;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+    
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #4361ee;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    /* AI Preview Section */
+    .ai-preview {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 2px solid #e9ecef;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .ai-preview::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4361ee, #4cc9f0, #f72585);
+        animation: gradient 3s ease infinite;
+        background-size: 200% 200%;
+    }
+    
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1rem;
+        color: #495057;
+    }
+    
+    .preview-header i {
+        color: #4361ee;
+        font-size: 1.5rem;
+    }
+    
+    .preview-header h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .status-badge {
+        margin-left: auto;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        background: #e9ecef;
+        color: #495057;
+        transition: all 0.3s;
+    }
+    
+    .preview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .preview-item {
+        padding: 1rem;
+        border-radius: 8px;
+        transition: transform 0.3s;
+    }
+    
+    .preview-item:hover {
+        transform: translateY(-2px);
+    }
+    
+    .preview-item.severity {
+        background: linear-gradient(135deg, #e8f0fe, #d0e0ff);
+        border: 1px solid #4361ee;
+    }
+    
+    .preview-item.priority {
+        background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+        border: 1px solid #f8961e;
+    }
+    
+    .preview-item .label {
+        display: block;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .preview-item .value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    
+    .preview-item .value.text-danger { color: #f72585; }
+    .preview-item .value.text-warning { color: #f8961e; }
+    .preview-item .value.text-success { color: #43aa8b; }
+    .preview-item .value.text-info { color: #4cc9f0; }
+    .preview-item .value.text-primary { color: #4361ee; }
+    
+    /* Submit Button */
+    .btn-submit {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #4361ee, #3f37c9);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(67, 97, 238, 0.3);
+    }
+    
+    .btn-submit i {
+        font-size: 1.2rem;
+    }
+    
+    /* Success Message */
+    .success-message {
+        background: linear-gradient(135deg, #43aa8b, #2a9d8f);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        animation: slideDown 0.5s ease;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .success-message i {
+        font-size: 2rem;
+    }
+    
+    .success-message .content {
+        flex: 1;
+    }
+    
+    .success-message .content h5 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .success-message .content p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    .success-message .bug-id {
+        background: rgba(255,255,255,0.2);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-family: monospace;
+        font-size: 1rem;
+    }
+    
+    /* Loading Spinner for AI */
+    .ai-loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #e9ecef;
+        border-top: 3px solid #4361ee;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .report-body {
+            padding: 1.5rem;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .preview-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <div class="report-card">
+        <div class="report-header">
+            <h2><i class="fas fa-bug me-2"></i>Report New Bug</h2>
+            <p>Found an issue? Let the team know with AI-powered assistance</p>
+        </div>
+        
+        <div class="report-body">
+            <!-- Success Message -->
+            {% if saved %}
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <div class="content">
+                    <h5>Bug Reported Successfully!</h5>
+                    <p>Your bug has been saved to the database with ID: <span class="bug-id">{{ bug_id }}</span></p>
+                    {% if assignee %}<p class="mb-1"><i class="fas fa-robot"></i> AI auto-assigned to <strong>{{ assignee }}</strong>.</p>{% endif %}
+                    {% if advice and advice.duplicates %}<p class="mb-1 text-warning"><i class="fas fa-clone"></i> Possible duplicate of {% for d in advice.duplicates %}<a href="{{ url_for('bug_detail', bug_id=d.bug_id) }}">{{ d.bug_id }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+                    <a href="{{ url_for('bug_detail', bug_id=bug_id) }}">View AI resolution advice &rarr;</a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <form id="reportBugForm" method="POST" action="{{ url_for('report_bug') }}">
+                <div class="form-group">
+                    <label for="title">
+                        <i class="fas fa-heading me-1"></i>Bug Title
+                    </label>
+                    <input type="text" class="form-control" id="title" name="title" 
+                           value="{{ title if title else '' }}"
+                           placeholder="e.g., Login button not working in Chrome" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">
+                        <i class="fas fa-align-left me-1"></i>Description
+                    </label>
+                    <textarea class="form-control" id="description" name="description" 
+                              rows="4" placeholder="Describe what happened, steps to reproduce, expected behavior..." required>{{ description if description else '' }}</textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="component">
+                            <i class="fas fa-puzzle-piece me-1"></i>Component
+                        </label>
+                        <select class="form-select" id="component" name="component" required>
+                            <option value="" disabled {% if not component %}selected{% endif %}>Select component</option>
+                            <option value="Authentication" {% if component == 'Authentication' %}selected{% endif %}>Authentication</option>
+                            <option value="Payment" {% if component == 'Payment' %}selected{% endif %}>Payment</option>
+                            <option value="UI" {% if component == 'UI' %}selected{% endif %}>UI</option>
+                            <option value="API" {% if component == 'API' %}selected{% endif %}>API</option>
+                            <option value="Database" {% if component == 'Database' %}selected{% endif %}>Database</option>
+                            <option value="Reporting" {% if component == 'Reporting' %}selected{% endif %}>Reporting</option>
+                            <option value="Notification" {% if component == 'Notification' %}selected{% endif %}>Notification</option>
+                            <option value="Dashboard" {% if component == 'Dashboard' %}selected{% endif %}>Dashboard</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="severity_override">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Severity (Optional)
+                        </label>
+                        <select class="form-select" id="severity_override" name="severity_override">
+                            <option value="">Use AI Prediction</option>
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- AI Prediction Preview -->
+                <div class="ai-preview">
+                    <div class="preview-header">
+                        <i class="fas fa-robot"></i>
+                        <h4>AI Prediction</h4>
+                        <span class="status-badge" id="aiStatus">Ready</span>
+                    </div>
+                    
+                    <div class="preview-grid">
+                        <div class="preview-item severity">
+                            <span class="label">Severity</span>
+                            <span class="value" id="predictedSeverity">
+                                {% if severity %}
+                                <span class="text-{{ 'danger' if severity == 'Critical' else 'warning' if severity == 'High' else 'info' if severity == 'Medium' else 'success' }}">
+                                    {{ severity }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="preview-item priority">
+                            <span class="label">Priority</span>
+                            <span class="value" id="predictedPriority">
+                                {% if priority %}
+                                <span class="text-{{ 'danger' if priority == 'P0' else 'warning' if priority == 'P1' else 'primary' if priority == 'P2' else 'info' if priority == 'P3' else 'secondary' }}">
+                                    {{ priority }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="developer-suggestions" id="suggestionsBox" style="display: none;">
+                    <h4><i class="fas fa-users"></i> Suggested Developers</h4>
+                    <div id="suggestionsList"></div>
+                </div>
+
+                <div id="aiAdviceBox" style="display:none; margin: 16px 0; padding: 16px; border-radius: 12px; background: #f1f5ff; border: 1px solid #c7d2fe;">
+                    <h4 style="margin-bottom:10px"><i class="fas fa-lightbulb"></i> AI Resolution Insights</h4>
+                    <div id="aiDuplicates"></div>
+                    <div id="aiFixes"></div>
+                    <div id="aiMeta" class="text-muted" style="font-size: .9rem"></div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="auto_assign" name="auto_assign" checked>
+                    <label class="form-check-label" for="auto_assign">
+                        <i class="fas fa-robot"></i> Auto-assign to the best-matched developer
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Bug Report
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title');
+    const descInput = document.getElementById('description');
+    const componentSelect = document.getElementById('component');
+    const severitySpan = document.getElementById('predictedSeverity');
+    const prioritySpan = document.getElementById('predictedPriority');
+    const aiStatus = document.getElementById('aiStatus');
+    
+    let predictionTimeout;
+    
+    function getAIPrediction() {
+        const title = titleInput.value.trim();
+        const description = descInput.value.trim();
+        const component = componentSelect.value;
+        
+        if (!title || !description || !component) {
+            aiStatus.textContent = 'Waiting for input...';
+            aiStatus.style.background = '#e9ecef';
+            return;
+        }
+        
+        aiStatus.innerHTML = '<span class="ai-loading"></span> Analyzing...';
+        aiStatus.style.background = '#f8961e';
+        
+        getAIAdvice(title, description, component);
+        fetch('/predict-api', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                component: component
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update severity
+            let severityClass = '';
+            if (data.severity === 'Critical') severityClass = 'text-danger';
+            else if (data.severity === 'High') severityClass = 'text-warning';
+            else if (data.severity === 'Medium') severityClass = 'text-info';
+            else if (data.severity === 'Low') severityClass = 'text-success';
+            
+            severitySpan.innerHTML = `<span class="${severityClass}">${data.severity}</span>`;
+            
+            // Update priority
+            let priorityClass = '';
+            if (data.priority === 'P0') priorityClass = 'text-danger';
+            else if (data.priority === 'P1') priorityClass = 'text-warning';
+            else if (data.priority === 'P2') priorityClass = 'text-primary';
+            else if (data.priority === 'P3') priorityClass = 'text-info';
+            else if (data.priority === 'P4') priorityClass = 'text-secondary';
+            
+            prioritySpan.innerHTML = `<span class="${priorityClass}">${data.priority}</span>`;
+            
+            aiStatus.textContent = 'Ready';
+            aiStatus.style.background = '#e9ecef';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            aiStatus.textContent = 'Error';
+            aiStatus.style.background = '#f72585';
+        });
+    }
+    
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function getAIAdvice(title, description, component) {
+        fetch('/api/ai-advice', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({title, description, component})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            const box = document.getElementById('aiAdviceBox');
+            let dup = '', fixes = '', meta = [];
+            if (data.duplicates.length) {
+                dup = '<div class="alert alert-warning py-2"><i class="fas fa-clone"></i> <strong>Possible duplicate:</strong> ' +
+                    data.duplicates.map(d => `<a href="/bug/${esc(d.bug_id)}" target="_blank">${esc(d.bug_id)}</a> (${Math.round(d.similarity*100)}% match, ${esc(d.status)}) ${esc(d.title)}`).join('; ') + '</div>';
+            }
+            if (data.suggested_fixes.length) {
+                fixes = '<div><strong>How similar bugs were fixed:</strong><ul class="mb-2">' +
+                    data.suggested_fixes.map(f => `<li>${esc(f.fix)} <small class="text-muted">(seen in ${f.seen_in})</small></li>`).join('') + '</ul></div>';
+            } else if (data.similar_bugs.length) {
+                fixes = '<div class="text-muted">Similar bugs found, but none have recorded fix notes yet.</div>';
+            }
+            if (data.eta) meta.push(`Expected fix time ~${data.eta.expected_days} days (from ${data.eta.based_on} similar bugs)`);
+            if (data.recommended_developers.length) meta.push('Best match: ' + esc(data.recommended_developers[0].developer));
+            document.getElementById('aiDuplicates').innerHTML = dup;
+            document.getElementById('aiFixes').innerHTML = fixes;
+            document.getElementById('aiMeta').innerText = meta.join(' | ');
+            box.style.display = (dup || fixes || meta.length) ? 'block' : 'none';
+        })
+        .catch(() => {});
+    }
+
+    function getDeveloperSuggestions() {
+        const title = document.querySelector('input[name="title"]').value;
+        const description = document.querySelector('textarea[name="description"]').value;
+        const component = document.querySelector('select[name="component"]').value;
+        const severity = document.getElementById('predictedSeverity').innerText;
+        
+        fetch('/suggest-developers', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                component: component,
+                severity: severity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displaySuggestions(data.suggestions);
+            }
+        });
+    }
+
+    function displaySuggestions(suggestions) {
+        const box = document.getElementById('suggestionsBox');
+        const list = document.getElementById('suggestionsList');
+        
+        if (suggestions.length > 0) {
+            let html = '<div class="suggestion-cards">';
+            suggestions.forEach(s => {
+                html += `
+                    <div class="suggestion-card">
+                        <div class="dev-name">${s.developer}</div>
+                        <div class="match-score">Match: ${s.score}%</div>
+                        <button onclick="assignTo('${s.developer}')">Assign</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+            box.style.display = 'block';
+        }
+    }
+        
+    // Debounce function to avoid too many API calls
+    function debounce(func, wait) {
+        return function() {
+            clearTimeout(predictionTimeout);
+            predictionTimeout = setTimeout(func, wait);
+        };
+    }
+    
+    const debouncedPrediction = debounce(getAIPrediction, 500);
+    
+    titleInput.addEventListener('input', debouncedPrediction);
+    descInput.addEventListener('input', debouncedPrediction);
+    componentSelect.addEventListener('change', getAIPrediction);
+    
+    // If we have existing values (after form submission), get prediction
+    if (titleInput.value && descInput.value && componentSelect.value) {
+        getAIPrediction();
+    }
+});
+</script>
+{% endblock %}
