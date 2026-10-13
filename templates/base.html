@@ -285,6 +285,12 @@
                             <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'bugsight.dashboard' %}active{% endif %}"
+                           href="{{ url_for('bugsight.dashboard') }}">
+                            <i class="fas fa-brain"></i> BugSight AI
+                        </a>
+                    </li>
                     
                     <!-- TESTER ONLY: Report Bug and All Bugs -->
                     {% if user.role == 'tester' %}

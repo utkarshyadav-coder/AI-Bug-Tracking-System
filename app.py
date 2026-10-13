@@ -274,6 +274,12 @@ def verify_and_upgrade_password(conn, user, supplied):
 
 # ========== ROUTES ==========
 
+# ========== BUGSIGHT: Random Forest severity prediction + Claude fix recommendations ==========
+# Developer + Tester dashboard at /bugsight (see bugsight/). Uses the DB helper and the
+# similar-bug advisor defined above.
+from bugsight import init_bugsight
+init_bugsight(app, get_db, get_advisor)
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))

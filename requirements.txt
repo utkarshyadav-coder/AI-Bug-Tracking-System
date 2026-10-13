@@ -7,8 +7,8 @@ xgboost>=2.0
 joblib
 torch
 transformers
-# optional, enables LLM fix plans:
-anthropic
+# enables Claude fix plans + BugSight recommendations (falls back to rules without ANTHROPIC_API_KEY):
+anthropic>=0.40
 # Next.js portal API (tracker_api.py):
 flask-cors>=4.0
 requests>=2.31

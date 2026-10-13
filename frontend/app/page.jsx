@@ -5,6 +5,7 @@ import BugForm from "./tester/components/BugForm";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   const [showTracker, setShowTracker] = useState(false);
@@ -56,10 +57,10 @@ export default function HomePage() {
             </div>
 
             {/* Role Cards */}
-            <div className="grid md:grid-cols-2 gap-12 max-w-5xl w-full">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 max-w-6xl w-full">
               {/* User Card */}
 
-              <div className="p-16  bg-white/90 rounded-4xl shadow-2xl hover:scale-105 transform transition duration-300 text-center flex flex-col justify-between">
+              <div className="p-10 bg-white/90 rounded-4xl shadow-2xl hover:scale-105 transform transition duration-300 text-center flex flex-col justify-between">
                 <h2 className="text-3xl font-bold mb-2 text-black">Tester / User</h2>
                 <p className="text-gray-700 mb-8 text-lg">
                   Submit bugs, get AI insights, and preview UI snapshots
@@ -73,7 +74,7 @@ export default function HomePage() {
               </div>
 
               {/* Admin Card */}
-              <div className="p-16 bg-white/90 rounded-4xl shadow-2xl hover:scale-105 transform transition duration-300 text-center flex flex-col justify-between">
+              <div className="p-10 bg-white/90 rounded-4xl shadow-2xl hover:scale-105 transform transition duration-300 text-center flex flex-col justify-between">
                 <h2 className="text-3xl font-bold mb-2 text-black">Developer</h2>
                 <p className="text-gray-700 mb-8 text-lg">
                   Manage submitted bugs and track progress.
@@ -82,6 +83,22 @@ export default function HomePage() {
                   <button className="mx-auto px-12 py-4 cursor-pointer  rounded-3xl  hover:bg-blue-600 bg-black text-white font-semibold text-lg">
                     Enter as Developer
                   </button>
+                </Link>
+              </div>
+
+              <div className="p-10 bg-white/90 rounded-4xl shadow-2xl hover:scale-105 transform transition duration-300 text-center flex flex-col justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold mb-2 text-black">BugSight AI</h2>
+                  <p className="text-gray-700 mb-8 text-lg">
+                    Predict severity and guide bug triage with your team’s fix history.
+                  </p>
+                </div>
+                <Link
+                  href="/bugsight"
+                  className="mx-auto inline-flex items-center gap-2 px-8 py-4 rounded-3xl bg-black text-white font-semibold text-lg transition-colors hover:bg-emerald-700"
+                >
+                  Open BugSight AI
+                  <ArrowRight aria-hidden="true" size={18} />
                 </Link>
               </div>
             </div>

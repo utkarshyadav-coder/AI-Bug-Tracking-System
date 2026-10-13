@@ -97,3 +97,30 @@ npm run dev                                # http://localhost:3000
 * *AI Analyze* needs `GROQ_API_KEY`; `HF_API_KEY` improves category/severity (keyword fallback otherwise); `EMAIL_USER` / `EMAIL_PASS` (Gmail app password) enable "Send mail to tester". See `env.example`.
 * macOS: port 5000 is often used by AirPlay; run Flask on another port (`flask run -p 5001` or edit `app.run`) and change `NEXT_PUBLIC_API_URL`.
 * Extra tests: `python tests/test_tracker_api.py`
+
+## BugSight AI module (Developer + Tester dashboard)
+
+Open **`/bugsight`** after logging in (new "BugSight AI" item in the nav bar). One page, two modules chosen by role:
+
+| | Tester module | Developer module |
+|---|---|---|
+| Analyze a bug (structured form -> Random Forest severity, confidence, class probabilities, per-tree votes, feature importance) | yes | yes |
+| Claude recommendation | repro steps, missing info, verification checklist, regression areas | root causes, fix steps, where to look, test plan, ETA, prevention |
+| Bulk CSV upload (<= 500 rows, `/api/bugsight/template.csv`) | yes | - |
+| Reports | own reports only | **triage queue** of all reports, highest predicted severity first |
+| Status / assign-to-me / **confirm actual severity** | - | yes |
+| Insights (severity mix, components, 14-day trend, feature importance) + Claude triage brief | - | yes |
+| Retrain the forest on confirmed severities | - | yes |
+
+Admins/managers see the developer module and can switch with `?view=tester`.
+
+**How it works**
+
+- `bugsight/rf_model.py` - a real `sklearn.ensemble.RandomForestClassifier` (150 trees) over 10 structured features. Saved to `models/bugsight_rf.joblib` and trained automatically on first start.
+- `bugsight/llm.py` - Claude (`ANTHROPIC_API_KEY`, model via `ANTHROPIC_MODEL`, default `claude-sonnet-5-5`). The prompt includes the forest's prediction and the most similar *resolved* bugs from your existing `ResolutionAdvisor`, so advice is grounded in your own fix history. Without a key the dashboard still works and clearly labels output as "rule-based fallback". Bug text is passed as delimited, untrusted data.
+- `bugsight/routes.py` - Flask blueprint, role checks, table `bugsight_reports` (in `schema.sql`, also auto-created at startup). Claude responses are cached per report and role.
+- Next.js portal (`frontend/`) is untouched; the JSON API under `/api/bugsight/*` can be called from it later.
+
+**Important: what the forest is trained on.** Your CSV has no structured impact data (affected users, frequency, environment...), so the forest is bootstrapped on a *synthetic*, rule-labelled dataset (holdout ~64% exact, ~97% within one severity level; this measures agreement with the synthetic rules, **not** real-world accuracy). Developers should set *Confirmed severity* on real reports and press **Retrain**: confirmed rows are blended in with 8x weight, and the dashboard shows how often the model agreed with developers. Expect usefulness to depend on that feedback loop.
+
+Tests: `python tests/test_bugsight.py` (46 checks; SQLite shim, Claude client faked).

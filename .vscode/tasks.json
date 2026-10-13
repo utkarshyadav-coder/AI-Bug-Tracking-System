@@ -1,0 +1,137 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install frontend npm dependencies",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install",
+				"--prefix",
+				"frontend"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Locate Node.js executables",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$paths = @('C:\\Program Files\\nodejs','C:\\Program Files (x86)\\nodejs','C:\\Users\\utkar\\AppData\\Roaming\\npm','C:\\Users\\utkar\\AppData\\Local\\Programs\\nodejs','C:\\Users\\utkar\\AppData\\Roaming\\nvm','C:\\nvm4w','C:\\tools\\nodejs'); Get-ChildItem -Path $paths -Filter 'npm*' -File -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName; Get-Command node,npm -ErrorAction SilentlyContinue | Select-Object Name,Source"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Find npm installation",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$paths = @(\"$env:ProgramFiles\\nodejs\", \"$env:ProgramFiles (x86)\\nodejs\", \"$env:APPDATA\\npm\", \"$env:LOCALAPPDATA\\Programs\\nodejs\", \"$env:APPDATA\\nvm\", \"C:\\nvm4w\", \"C:\\tools\\nodejs\"); Get-ChildItem -Path $paths -Filter \"npm*\" -File -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName; Get-Command node,npm -ErrorAction SilentlyContinue | Select-Object Name,Source"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Node command paths",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"where npm & where node & echo %PATH%"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check common npm locations",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"if exist C:\\PROGRA~1\\nodejs\\npm.cmd echo C:\\PROGRA~1\\nodejs\\npm.cmd & if exist %APPDATA%\\npm\\npm.cmd echo %APPDATA%\\npm\\npm.cmd & if exist %LOCALAPPDATA%\\Programs\\nodejs\\npm.cmd echo %LOCALAPPDATA%\\Programs\\nodejs\\npm.cmd & if exist %APPDATA%\\nvm echo %APPDATA%\\nvm exists & if exist %USERPROFILE%\\scoop\\apps\\nodejs echo scoop nodejs exists & if exist C:\\ProgramData\\chocolatey\\bin\\npm.cmd echo chocolatey npm exists"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install Next.js frontend dependencies",
+			"type": "shell",
+			"command": "C:\\PROGRA~1\\nodejs\\npm.cmd",
+			"args": [
+				"install",
+				"--prefix",
+				"frontend"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Locate Node executable",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"if exist C:\\PROGRA~1\\nodejs\\node.exe echo C:\\PROGRA~1\\nodejs\\node.exe & if exist C:\\PROGRA~2\\nodejs\\node.exe echo C:\\PROGRA~2\\nodejs\\node.exe & if exist %LOCALAPPDATA%\\Programs\\nodejs\\node.exe echo %LOCALAPPDATA%\\Programs\\nodejs\\node.exe & where node"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install frontend dependencies with Node PATH",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH% && C:\\PROGRA~1\\nodejs\\npm.cmd install --prefix frontend"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify frontend npm installation",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH% && node --version && npm.cmd --version && npm.cmd ls --prefix frontend --depth=0"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Next.js frontend",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH% && C:\\PROGRA~1\\nodejs\\npm.cmd run dev --prefix frontend"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Next.js dev server",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"tasklist /FI \"IMAGENAME eq node.exe\" & netstat -ano | findstr :3000"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

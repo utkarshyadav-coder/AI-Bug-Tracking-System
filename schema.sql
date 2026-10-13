@@ -80,3 +80,34 @@ CREATE TABLE IF NOT EXISTS tracker_bugs (
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_tracker_bugs_url (test_url(191))
 ) CHARACTER SET utf8mb4;
+
+-- BugSight AI module (Random Forest severity + Claude recommendations); also auto-created at startup
+CREATE TABLE IF NOT EXISTS bugsight_reports (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    title               VARCHAR(255) NOT NULL,
+    description         TEXT,
+    bug_type            VARCHAR(20),
+    component           VARCHAR(50),
+    environment         VARCHAR(20),
+    affected_users      INT,
+    frequency_per_day   INT,
+    time_to_reproduce   VARCHAR(20),
+    workaround          VARCHAR(10),
+    error_rate_spike    VARCHAR(10),
+    stack_depth         INT,
+    days_since_reported INT,
+    predicted_severity  VARCHAR(20),
+    confidence          FLOAT,
+    risk_score          FLOAT,
+    probabilities       TEXT,
+    status              VARCHAR(20) DEFAULT 'Open',
+    confirmed_severity  VARCHAR(20) NULL,   -- set by developers; used when retraining the forest
+    reporter            VARCHAR(50),
+    assigned_to         VARCHAR(50) NULL,
+    source              VARCHAR(10) DEFAULT 'manual',
+    recommendations     TEXT,               -- cached Claude output, JSON keyed by role
+    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME NULL,
+    INDEX idx_bs_status (status),
+    INDEX idx_bs_reporter (reporter)
+) CHARACTER SET utf8mb4;

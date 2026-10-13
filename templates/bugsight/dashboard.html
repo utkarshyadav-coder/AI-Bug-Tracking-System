@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}BugSight AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bugsight/dashboard.css') }}">
+{% endblock %}
+
+{% macro select(name, label) %}
+<div class="bs-field"><label for="f-{{ name }}">{{ label }}</label>
+  <select id="f-{{ name }}" name="{{ name }}">
+    {% for o in options[name] %}<option value="{{ o }}" {% if defaults[name] == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+  </select></div>
+{% endmacro %}
+{% macro num(name, label, hint='') %}
+<div class="bs-field"><label for="f-{{ name }}">{{ label }}</label>
+  <input id="f-{{ name }}" name="{{ name }}" type="number" min="0" value="{{ defaults[name] }}">
+  {% if hint %}<small>{{ hint }}</small>{% endif %}</div>
+{% endmacro %}
+
+{% block content %}
+<div class="bs" data-mode="{{ mode }}">
+  <div class="bs-head">
+    <div>
+      <h1><i class="fas fa-bug"></i> BugSight AI
+        <span class="bs-chip bs-mode">{{ 'Tester module' if mode == 'tester' else 'Developer module' }}</span></h1>
+      <p>Random Forest severity prediction + Claude fix guidance.</p>
+    </div>
+    <div class="bs-chips">
+      <span class="bs-chip" id="chip-rf"><i class="fas fa-tree"></i> Random Forest: loading…</span>
+      <span class="bs-chip {{ 'ok' if claude_live else 'warn' }}" title="{{ claude_model }}">
+        <i class="fas fa-robot"></i> Claude: {{ 'live' if claude_live else 'fallback (no API key)' }}</span>
+      {% if user.role in ('admin', 'manager') %}
+      <a class="bs-chip link" href="?view={{ 'developer' if mode == 'tester' else 'tester' }}">
+        Switch to {{ 'developer' if mode == 'tester' else 'tester' }} view</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bs-kpis" id="kpis"></div>
+
+  <div class="bs-tabs" role="tablist">
+    {% if mode == 'developer' %}
+      <button class="active" data-tab="queue"><i class="fas fa-list-ol"></i> Triage queue</button>
+      <button data-tab="analyze"><i class="fas fa-microscope"></i> Analyze bug</button>
+      <button data-tab="insights"><i class="fas fa-chart-bar"></i> Insights &amp; model</button>
+    {% else %}
+      <button class="active" data-tab="analyze"><i class="fas fa-microscope"></i> Analyze bug</button>
+      <button data-tab="bulk"><i class="fas fa-file-csv"></i> Bulk upload</button>
+      <button data-tab="queue"><i class="fas fa-clipboard-list"></i> My reports</button>
+    {% endif %}
+  </div>
+
+  <!-- ANALYZE -->
+  <section class="bs-panel" data-panel="analyze" {% if mode == 'developer' %}hidden{% endif %}>
+    <div class="bs-grid2">
+      <form class="bs-card" id="bs-form" autocomplete="off">
+        <h3>Bug details</h3>
+        <div class="bs-samples" id="samples"></div>
+        <div class="bs-field"><label for="f-title">Title *</label>
+          <input id="f-title" name="title" required maxlength="255" placeholder="e.g. Payment gateway timeout in production"></div>
+        <div class="bs-field"><label for="f-description">Description</label>
+          <textarea id="f-description" name="description" rows="3" maxlength="5000"></textarea></div>
+        <div class="bs-row">{{ select('bug_type', 'Bug type') }}{{ select('component', 'Component') }}{{ select('environment', 'Environment') }}</div>
+        <div class="bs-row">{{ num('affected_users', 'Affected users') }}{{ num('frequency_per_day', 'Occurrences / day') }}</div>
+        <div class="bs-row">{{ select('time_to_reproduce', 'Reproducibility') }}{{ select('workaround', 'Workaround') }}{{ select('error_rate_spike', 'Error-rate spike') }}</div>
+        <div class="bs-row">{{ num('stack_depth', 'Stack-trace depth') }}{{ num('days_since_reported', 'Days since reported') }}</div>
+        <button class="bs-btn" id="btn-analyze" type="submit"><i class="fas fa-bolt"></i> Predict &amp; get recommendation</button>
+        <div class="bs-err" id="form-err" hidden></div>
+      </form>
+      <div>
+        <div class="bs-card" id="result"><p class="bs-muted">Submit a bug to see the Random Forest prediction.</p></div>
+        <div class="bs-card" id="rec" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUEUE / MY REPORTS -->
+  <section class="bs-panel" data-panel="queue" {% if mode == 'tester' %}hidden{% endif %}>
+    <div class="bs-card">
+      <div class="bs-bar">
+        <h3>{{ 'Triage queue (highest predicted severity first)' if mode == 'developer' else 'My reports' }}</h3>
+        <div>
+          <select id="flt-status"><option value="">All statuses</option>{% for s in statuses %}<option>{{ s }}</option>{% endfor %}</select>
+          <select id="flt-sev"><option value="">All severities</option>{% for s in severities %}<option>{{ s }}</option>{% endfor %}</select>
+        </div>
+      </div>
+      <div class="bs-scroll"><table class="bs-table"><thead><tr>
+        <th>#</th><th>Severity</th><th>Conf.</th><th>Title</th><th>Component</th><th>Env</th><th>Status</th><th>Assignee</th></tr></thead>
+        <tbody id="reports-body"><tr><td colspan="8" class="bs-muted">Loading…</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- BULK (tester) -->
+  <section class="bs-panel" data-panel="bulk" hidden>
+    <div class="bs-card">
+      <h3>Bulk severity prediction</h3>
+      <p class="bs-muted">Upload a CSV (max 500 rows). Required column: <code>title</code>. Optional:
+        <code>description, bug_type, component, environment, affected_users, frequency_per_day, time_to_reproduce, workaround, error_rate_spike, stack_depth, days_since_reported</code>.
+        Missing values use safe defaults. <a href="/api/bugsight/template.csv">Download template</a></p>
+      <input type="file" id="bulk-file" accept=".csv,text/csv">
+      <button class="bs-btn" id="btn-bulk"><i class="fas fa-upload"></i> Predict all</button>
+      <div class="bs-err" id="bulk-err" hidden></div>
+      <div id="bulk-out"></div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS (developer) -->
+  <section class="bs-panel" data-panel="insights" hidden>
+    <div class="bs-grid2">
+      <div class="bs-card"><h3>Severity distribution</h3><div id="ch-sev"></div></div>
+      <div class="bs-card"><h3>By component</h3><div id="ch-comp"></div></div>
+      <div class="bs-card"><h3>Reports, last 14 days</h3><div id="ch-trend" class="bs-trend"></div></div>
+      <div class="bs-card"><h3>Global feature importance</h3><div id="ch-imp"></div></div>
+    </div>
+    <div class="bs-card">
+      <div class="bs-bar"><h3><i class="fas fa-robot"></i> Claude triage brief (open bugs)</h3>
+        <button class="bs-btn sm" id="btn-brief">Generate</button></div>
+      <div id="brief"><p class="bs-muted">Prioritised actions and patterns across the open queue.</p></div>
+    </div>
+    <div class="bs-card">
+      <div class="bs-bar"><h3><i class="fas fa-tree"></i> Model</h3>
+        <button class="bs-btn sm" id="btn-retrain">Retrain with confirmed severities</button></div>
+      <div id="model-info" class="bs-muted">Loading…</div>
+    </div>
+  </section>
+
+  <!-- DETAIL DRAWER -->
+  <div class="bs-overlay" id="drawer" hidden>
+    <div class="bs-drawer"><button class="bs-x" id="drawer-close" aria-label="Close">&times;</button><div id="drawer-body"></div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="bs-config" type="application/json">{{ {'mode': mode, 'role': user.role, 'username': user.username, 'statuses': statuses, 'severities': severities}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/bugsight/dashboard.js') }}"></script>
+{% endblock %}
