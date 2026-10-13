@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const BUGSIGHT_URL = "https://bug-severity-prediction.vercel.app/";
 
 export default function BugSightPage() {
   return (
@@ -22,7 +22,7 @@ export default function BugSightPage() {
       </header>
       <iframe
         title="BugSight AI dashboard"
-        src={`${API_URL}/bugsight`}
+        src={BUGSIGHT_URL}
         className="block h-[calc(100vh-4rem)] w-full border-0"
       />
     </main>
