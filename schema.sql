@@ -52,3 +52,31 @@ CREATE TABLE IF NOT EXISTS sprint_bugs (
     added_by  VARCHAR(50),
     PRIMARY KEY (sprint_id, bug_id)
 );
+
+-- Tables used by the Next.js tester/developer portal (tracker_api.py also creates these automatically)
+CREATE TABLE IF NOT EXISTS tracker_developers (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(255),
+    email         VARCHAR(255) NOT NULL UNIQUE,
+    assigned_urls TEXT,                        -- JSON list of site URLs this developer handles
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tracker_bugs (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    test_url    VARCHAR(1024),
+    category    VARCHAR(64) NOT NULL DEFAULT 'General Bug',
+    title       VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    summary     TEXT,
+    tags        TEXT,
+    severity    VARCHAR(16) NOT NULL DEFAULT 'Medium',
+    status      VARCHAR(16) NOT NULL DEFAULT 'Open',
+    reports     INT NOT NULL DEFAULT 1,
+    reporters   TEXT,
+    screenshot  VARCHAR(255),
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tracker_bugs_url (test_url(191))
+) CHARACTER SET utf8mb4;

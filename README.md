@@ -67,3 +67,33 @@ python tests/test_app.py      # 21 route tests, MySQL replaced by an in-memory S
 - The DistilBERT model needs retraining (`models/severity.py`) to restore it; until then the fallback is used.
 - Not tested against a real MySQL server (none available here), only the SQLite shim. `DATEDIFF`/`CURDATE`
   are standard MySQL, but run `seed_data.py` and click through once.
+
+## Tester / Developer web portal (Next.js UI)
+
+`frontend/` holds the Next.js + Tailwind portal copied from zdawan/AI-Bug-Tracker (same UI).
+It talks to this Flask app through `tracker_api.py` (wired in `app.py` with `init_tracker(app)`),
+which stores its data in two separate tables (`tracker_bugs`, `tracker_developers`) so your
+existing `bugs` / `users` tables and ML pipeline are untouched.
+
+**Run locally (two terminals)**
+
+```
+# 1) backend (from the project root)
+pip install -r requirements.txt
+mysql -u root -p < schema.sql              # creates DB `bugtracker` incl. the tracker_* tables
+mysql -u root -p < tracker_seed.sql        # optional: developer githubtest@gmail.com for the portal
+export DB_PASSWORD='your-mysql-password' SECRET_KEY='long-random-string'   # Windows PowerShell: $env:DB_PASSWORD='...'
+python app.py                              # http://localhost:5000  (existing dashboards + portal API)
+
+# 2) portal UI
+cd frontend
+cp .env.local.example .env.local           # NEXT_PUBLIC_API_URL=http://localhost:5000
+npm install
+npm run dev                                # http://localhost:3000
+```
+
+* Tester side: open http://localhost:3000 -> *Enter as Tester* -> paste the site URL -> report a bug.
+* Developer side: *Enter as Developer* -> log in with `githubtest@gmail.com` (sees bugs for the URLs assigned in `tracker_developers.assigned_urls`).
+* *AI Analyze* needs `GROQ_API_KEY`; `HF_API_KEY` improves category/severity (keyword fallback otherwise); `EMAIL_USER` / `EMAIL_PASS` (Gmail app password) enable "Send mail to tester". See `env.example`.
+* macOS: port 5000 is often used by AirPlay; run Flask on another port (`flask run -p 5001` or edit `app.run`) and change `NEXT_PUBLIC_API_URL`.
+* Extra tests: `python tests/test_tracker_api.py`

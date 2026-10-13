@@ -23,6 +23,10 @@ except Exception as _e:  # pragma: no cover
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
 
+# ========== API FOR THE NEXT.JS TESTER / DEVELOPER PORTAL (frontend/) ==========
+from tracker_api import init_tracker
+init_tracker(app)
+
 print("🚀 Loading ML models...")
 
 # ========== LOAD SEVERITY MODEL ==========

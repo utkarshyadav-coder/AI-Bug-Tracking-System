@@ -1,0 +1,582 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { CheckCircle, Pencil, Info } from "lucide-react"; // ✅ npm install lucide-react
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+
+export default function AssignedTickets() {
+  const [editUrl, setEditUrl] = useState(null); // base url being edited
+  const [subPath, setSubPath] = useState("");
+  const [urlSections, setUrlSections] = useState({}); // { baseUrl: [subPaths] }
+  const [viewUrl, setViewUrl] = useState(null); // base url being viewed
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [selectedCode, setSelectedCode] = useState("");
+  const [developer, setDeveloper] = useState(null);
+  const [bugs, setBugs] = useState([]);
+  const [showResolvePopup, setShowResolvePopup] = useState(false);
+  const [selectedBug, setSelectedBug] = useState(null);
+  const [sendMail, setSendMail] = useState(false); // ✅ State for send mail checkbox
+  const [editBug, setEditBug] = useState(null); // ✅ For editing severity
+  const [newSeverity, setNewSeverity] = useState("Medium");
+  const [resolveBug, setResolveBug] = useState(null); // ✅ For resolving bugs
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("developer");
+    router.push("/admin/login");
+  };
+
+  const handleResolve = async (bugId) => {
+    try {
+      await axios.patch(`${API_URL}/api/bugs/${bugId}/resolve`, {
+        sendMail,
+      });
+
+      toast.success("Bug resolved successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      setShowResolvePopup(false);
+
+      // update UI
+      setBugs((prev) =>
+        prev.map((b) => (b._id === bugId ? { ...b, status: "Closed" } : b)),
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to resolve bug.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const dev = JSON.parse(localStorage.getItem("developer"));
+    if (dev) {
+      setDeveloper(dev);
+      axios
+        .get(`${API_URL}/api/developers/${dev._id}/bugs`)
+        .then((res) => setBugs(res.data))
+        .catch((err) => console.error(err));
+    }
+  }, []);
+
+  const handleSeverityUpdate = async () => {
+    if (!editBug) return;
+    try {
+      const res = await axios.patch(
+        `${API_URL}/api/bugs/${editBug._id}/severity`,
+        { severity: newSeverity },
+      );
+      setBugs((prev) =>
+        prev.map((b) =>
+          b._id === editBug._id ? { ...b, severity: res.data.severity } : b,
+        ),
+      );
+      setEditBug(null);
+    } catch (err) {
+      console.error("Error updating severity", err);
+    }
+  };
+
+  const getBugCountForUrl = (url) =>
+    bugs.filter((bug) => bug.testUrl?.startsWith(url)).length;
+
+  const getResolvedBugCountForUrl = (baseUrl) =>
+    bugs.filter(
+      (bug) => bug.status === "Closed" && bug.testUrl?.startsWith(baseUrl),
+    ).length;
+
+  const getUnresolvedBugCountForUrl = (baseUrl) =>
+    bugs.filter(
+      (bug) => bug.status !== "Closed" && bug.testUrl?.startsWith(baseUrl),
+    ).length;
+
+  if (!developer)
+    return <p className="text-center mt-20">Please login first</p>;
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex flex-col items-center py-6 px-4 md:py-12 md:px-6 font-sans relative">
+      <div
+        className="
+          bg-white/90 backdrop-blur-md shadow-2xl rounded-3xl
+          px-4 py-6 sm:px-8 sm:py-10 md:px-12 md:py-14
+          max-w-[95%]
+          w-full
+          min-h-[85vh]
+          flex flex-col gap-10
+        "
+      >
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          Welcome, {developer.name}
+        </h1>
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">
+            Assigned Application
+          </h2>
+
+          {developer.assignedUrls.map((url, index) => (
+            <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-6">
+              {/* ================= LEFT CARD ================= */}
+              <div className="col-span-1 md:col-span-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 font-medium hover:underline break-all block"
+                    >
+                      {url}
+                    </a>
+
+                    <div className="text-sm text-gray-500 space-y-0.5 mt-2">
+                      <p>
+                        Total bugs:{" "}
+                        <span className="font-semibold text-gray-800">
+                          {getBugCountForUrl(url)}
+                        </span>
+                      </p>
+                      <p className="text-green-700">
+                        Resolved:{" "}
+                        <span className="font-semibold">
+                          {getResolvedBugCountForUrl(url)}
+                        </span>
+                      </p>
+                      <p className="text-yellow-700">
+                        Unresolved:{" "}
+                        <span className="font-semibold">
+                          {getUnresolvedBugCountForUrl(url)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-4 mt-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditUrl(url);
+                        setSubPath("");
+                      }}
+                      className="flex items-center gap-1 text-gray-600 hover:text-black text-sm cursor-pointer"
+                    >
+                      <Pencil size={14} />
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => setViewUrl(url)}
+                      className="flex items-center gap-1 text-blue-600 hover:underline text-sm cursor-pointer"
+                    >
+                      <Info size={14} />
+                      View
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= RIGHT CARD ================= */}
+              <div className="col-span-1 bg-white border border-gray-200 rounded-xl px-4 py-4 sm:px-6 sm:py-5">
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-3">
+                  Resolution Progress
+                </p>
+
+                {/* Progress Bar */}
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full bg-green-600"
+                    style={{
+                      width: `${(getResolvedBugCountForUrl(url) /
+                        Math.max(getBugCountForUrl(url), 1)) *
+                        100
+                        }%`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-xs text-gray-600 mb-2">
+                  <span>{getResolvedBugCountForUrl(url)} Resolved</span>
+                  <span>{getUnresolvedBugCountForUrl(url)} Pending</span>
+                </div>
+
+                <span
+                  className={`text-xs font-medium ${getBugCountForUrl(url) === 0
+                    ? "text-gray-500"
+                    : getUnresolvedBugCountForUrl(url) === 0
+                      ? "text-green-700"
+                      : "text-yellow-700"
+                    }`}
+                >
+                  {getBugCountForUrl(url) === 0
+                    ? "No bugs reported"
+                    : getUnresolvedBugCountForUrl(url) === 0
+                      ? "All bugs resolved 🎉"
+                      : "Action required"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="px-6 py-2.5 bg-red-400 text-white rounded-xl cursor-pointer w-fit hover:bg-red-600 transition-colors"
+        >
+          Logout
+        </button>
+
+        {bugs.length === 0 ? (
+          <p className="text-gray-500 justify-center flex mt-10">
+            No bugs reported yet. If any, it will be visible here.
+          </p>
+        ) : bugs.every((b) => b.status === "Closed") ? (
+          <p className="text-green-600 font-semibold text-center">
+            All bugs resolved 🎉
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="p-4">Title</th>
+                  <th className="p-4">Detail</th>
+                  <th className="p-4">Category</th>
+                  <th className="p-4">Test URL</th>
+                  <th className="p-4">Severity</th>
+                  <th className="p-4">Reports</th>
+                  <th className="p-4">Date</th>
+                  <th className="p-4 relative">
+                    <div className="flex items-center justify-start gap-2">
+                      <span>Resolve</span>
+                      <div className="relative group">
+                        <Info
+                          size={16}
+                          className="text-red-500 cursor-pointer hover:text-gray-700"
+                        />
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-64 text-center shadow-lg">
+                          This is a one-time action and cannot be revoked.
+                          Please verify the bug before marking as resolved.
+                        </span>
+                      </div>
+                    </div>
+                  </th>
+                  <th className="p-8">Code</th>
+                  <th className="p-4">Screenshots</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bugs.map((bug) => (
+                  <tr key={bug._id} className="border-b hover:bg-gray-50">
+                    <td className="p-4">{bug.title}</td>
+                    <td
+                      className="p-4 text-blue-600 font-medium cursor-pointer underline"
+                      onClick={() => setSelectedBug(bug)}
+                    >
+                      View
+                    </td>
+                    <td className="p-4">
+                      <span
+                        className="px-3 py-1 rounded-full text-white text-xs font-semibold"
+                        style={{
+                          backgroundColor:
+                            bug.category === "UI Bug"
+                              ? "#3b82f6"
+                              : bug.category === "Backend Bug"
+                                ? "#6366f1"
+                                : bug.category === "Security Bug"
+                                  ? "#ef4444"
+                                  : bug.category === "Performance Bug"
+                                    ? "#f59e0b"
+                                    : bug.category === "Database Bug"
+                                      ? "#0d9488"
+                                      : bug.category === "Developer Error"
+                                        ? "#6b7280"
+                                        : "#9ca3af",
+                        }}
+                      >
+                        {bug.category || "General Bug"}
+                      </span>
+                    </td>
+                    <td className="p-4">{bug.testUrl}</td>
+                    <td className="p-4 flex items-center gap-2">
+                      <span>{bug.severity}</span>
+                      <Pencil
+                        size={16}
+                        className="cursor-pointer text-gray-500 hover:text-black"
+                        onClick={() => {
+                          setEditBug(bug);
+                          setNewSeverity(bug.severity);
+                        }}
+                      />
+                    </td>
+                    <td className="p-4">{bug.reports}</td>
+                    <td className="p-4">
+                      {new Date(bug.createdAt).toLocaleDateString()}
+                    </td>
+
+                    {/* ✅ New Resolved Section */}
+                    <td className="p-4 text-center">
+                      {bug.status === "Closed" ? (
+                        <CheckCircle
+                          className="text-green-600 mx-auto"
+                          size={20}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => setResolveBug(bug)}
+                          className="text-blue-600 underline cursor-pointer"
+                        >
+                          Mark
+                        </button>
+                      )}
+                    </td>
+                    {/* ✅ New Code Link Section */}
+                    <td className="p-4">
+                      <button
+                        onClick={() => {
+                          setSelectedCode("Error in fetching the code"); // assuming ("Hi") is the code string
+                          setShowCodeModal(true);
+                        }}
+                        className="text-blue-600 font-medium underline cursor-pointer"
+                      >
+                        Open
+                      </button>
+                    </td>
+                    <td className="p-4">Not Included</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ✅ Description Modal */}
+      {selectedBug && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
+            <h2 className="text-2xl font-bold mb-4">{selectedBug.title}</h2>
+            <p className="text-gray-700 whitespace-pre-line">
+              {selectedBug.description}
+            </p>
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setSelectedBug(null)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resolveBug && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Mark bug as resolved?</h2>
+            <p className="text-gray-600 mb-6">Bug: {resolveBug.title}</p>
+
+            {/* ⚠️ Alert Box */}
+            <div className="flex items-start gap-3 bg-red-50 border border-red-300 text-red-700 text-sm rounded-lg p-3 mb-6">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5 mt-0.5 text-red-600 flex-shrink-0"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3m0 4h.01m-6.938 4h13.856c1.054 0 1.62-1.144 1.05-2.05L13.05 4.05a1.2 1.2 0 00-2.1 0L4.032 17.95c-.57.906-.004 2.05 1.05 2.05z"
+                />
+              </svg>
+              <span>
+                This is a one-time action and cannot be revoked. Please verify
+                the bug before marking it as resolved.
+              </span>
+            </div>
+
+            {/* ✅ Checkbox to send email */}
+            <div className="flex items-center mb-6">
+              <input
+                type="checkbox"
+                id="sendMail"
+                checked={sendMail}
+                onChange={(e) => setSendMail(e.target.checked)}
+                className="w-4 h-4 gap-2"
+              />
+              <label htmlFor="sendMail" className="text-gray-700 gap-2 ml-2">
+                Send mail to tester
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setResolveBug(null)}
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg cursor-pointer"
+              >
+                No
+              </button>
+              <button
+                onClick={() => {
+                  handleResolve(resolveBug._id, sendMail);
+                  setResolveBug(null); // ✅ close popup immediately after Yes
+                }}
+                className="px-4 py-2 bg-green-700 cursor-pointer text-white rounded-lg hover:bg-green-800"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCodeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <pre className="text-sm text-black whitespace-pre-wrap">
+              {selectedCode}
+            </pre>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowCodeModal(false);
+                  setSelectedCode("");
+                }}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Severity Edit Modal */}
+      {editBug && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">
+              Update for: <span className="font-medium">{editBug.title}</span>
+            </h2>
+            <select
+              value={newSeverity}
+              onChange={(e) => setNewSeverity(e.target.value)}
+              className="w-full border px-4 py-2 rounded-lg mb-4"
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setEditBug(null)}
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSeverityUpdate}
+                className="px-4 py-2 bg-green-700 cursor-pointer text-white rounded-lg hover:bg-green-800"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editUrl && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Add Section</h2>
+
+            <p className="text-sm text-gray-500 mb-2">Base URL: {editUrl}</p>
+
+            <input
+              type="text"
+              placeholder="/bug-report"
+              value={subPath}
+              onChange={(e) => setSubPath(e.target.value)}
+              className="w-full border px-4 py-2 rounded-lg mb-4"
+            />
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setEditUrl(null)}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!subPath.startsWith("/")) {
+                    toast.error("Sub-path must start with /");
+                    return;
+                  }
+
+                  setUrlSections((prev) => ({
+                    ...prev,
+                    [editUrl]: [...(prev[editUrl] || []), subPath],
+                  }));
+
+                  toast.success("Section added");
+                  setEditUrl(null);
+                  setSubPath("");
+                }}
+                className="px-4 py-2 bg-green-700 text-white rounded-lg"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewUrl && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
+            <h2 className="text-xl font-bold mb-4">Available Sections</h2>
+
+            <p className="text-sm text-gray-500 mb-4">Base URL: {viewUrl}</p>
+
+            {urlSections[viewUrl]?.length > 0 ? (
+              <ul className="space-y-2">
+                {urlSections[viewUrl].map((path, idx) => (
+                  <li
+                    key={idx}
+                    className="bg-gray-100 px-4 py-2 rounded-lg font-mono"
+                  >
+                    {path}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 text-sm">No sections added yet.</p>
+            )}
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setViewUrl(null)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
